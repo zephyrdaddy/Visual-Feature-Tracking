@@ -1,0 +1,39 @@
+Ptr<FeatureDetector> detector;
+detector = new DynamicAdaptedFeatureDetector ( new FastAdjuster(10,true), 5000, 10000, 10);
+detector->detect(leftImageGrey, keypoints_1);
+detector->detect(rightImageGrey, keypoints_2);
+
+Ptr<DescriptorExtractor> extractor = DescriptorExtractor::create("SIFT");
+extractor->compute( leftImageGrey, keypoints_1, descriptors_1 );
+extractor->compute( rightImageGrey, keypoints_2, descriptors_2 );
+
+vector< vector<DMatch> > matches;
+Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce");
+matcher->knnMatch( descriptors_1, descriptors_2, matches, 500 );
+
+//look whether the match is inside a defined area of the image
+//only 25% of maximum of possible distance
+double tresholdDist = 0.25 * sqrt(double(leftImageGrey.size().height*leftImageGrey.size().height + leftImageGrey.size().width*leftImageGrey.size().width));
+
+vector< DMatch > good_matches2;
+good_matches2.reserve(matches.size());  
+for (size_t i = 0; i < matches.size(); ++i)
+{ 
+    for (int j = 0; j < matches[i].size(); j++)
+    {
+        Point2f from = keypoints_1[matches[i][j].queryIdx].pt;
+        Point2f to = keypoints_2[matches[i][j].trainIdx].pt;
+
+        //calculate local distance for each possible match
+        double dist = sqrt((from.x - to.x) * (from.x - to.x) + (from.y - to.y) * (from.y - to.y));
+
+        //save as best match if local distance is in specified area and on same height
+        if (dist < tresholdDist && abs(from.y-to.y)<5)
+        {
+            good_matches2.push_back(matches[i][j]);
+            j = matches[i].size();
+        }
+    }
+}
+
+
