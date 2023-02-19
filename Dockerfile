@@ -1,5 +1,6 @@
 FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
+ARG BOOST_VERSION=1.80.0
 
 # install dependencies via apt
 ENV DEBCONF_NOWARNINGS yes
@@ -223,6 +224,17 @@ RUN set -x && \
   rm -rf *
 ENV Pangolin_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/Pangolin
 
+# Install Boost
+# https://www.boost.org/doc/libs/1_80_0/more/getting_started/unix-variants.html
+RUN cd /tmp && \
+    BOOST_VERSION_MOD=$(echo $BOOST_VERSION | tr . _) && \
+    wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_MOD}.tar.bz2 && \
+    tar --bzip2 -xf boost_${BOOST_VERSION_MOD}.tar.bz2 && \
+    cd boost_${BOOST_VERSION_MOD} && \
+    ./bootstrap.sh --prefix=/usr/local && \
+    ./b2 install && \
+    rm -rf /tmp/*
+
 # OpenVSLAM
 # COPY . /openvslam/
 # WORKDIR /openvslam/
@@ -243,8 +255,11 @@ ENV Pangolin_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/Pangolin
 
 # WORKDIR /openvslam/build/
 
+# Set up the bazel setting
+RUN echo "build --copt=-fdiagnostics-color=always\n\rrun --copt=-fdiagnostics-color=always" >> /etc/bazel.bazelrc 
+
 # Set up workspace
-RUN mkdir -p /usr/src/app
-ENV WORKSPACE /usr/src/app
-WORKDIR /usr/src/app
+# RUN mkdir -p /usr/visual_frontend
+ENV WORKSPACE /usr/visual_frontend
+WORKDIR /usr/visual_frontend
 ENTRYPOINT ["/bin/bash"]
