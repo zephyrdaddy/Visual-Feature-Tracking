@@ -14,10 +14,9 @@ void SiftFeatureExtractor::ExtractFeatures(const cv::Mat& img, std::shared_ptr<F
 
     std::vector<std::shared_ptr<Feature>>& features = frame->GetFeatures();
     
-    features.resize(keypoints.size());
+    features.reserve(keypoints.size());
     for (std::size_t i = 0; i < keypoints.size(); i++) {
-        features[i].reset(new Feature());
-        features[i]->SetPoint( keypoints[i].pt );
+        features.push_back(std::shared_ptr<Feature>(new Feature(keypoints[i].pt)));
     }
 
     // printf("Descriptor size %ld\n", frame->GetDescr().size());

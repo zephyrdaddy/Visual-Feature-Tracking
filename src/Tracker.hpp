@@ -8,6 +8,7 @@
 #include "opencv4/opencv2/features2d.hpp"
 #include "opencv4/opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv4/opencv2/calib3d/calib3d.hpp"
+#include <boost/circular_buffer.hpp>
 
 namespace visual_frontend {
 
@@ -25,10 +26,17 @@ private:
     // Descriptor Matcher 
     cv::Ptr<cv::DescriptorMatcher> descr_matcher_;
 
-    std::unordered_map<int, int> feature_id_map_;
+    // std::unordered_map<int, int> feature_id_map_;
 
-    std::vector<std::shared_ptr<Frame>> frame_list_;
+    // How to store the feature tracking information.
+    // Hash with image id and feature id in it 
+    // 
 
+    // std::vector<std::shared_ptr<Frame>> frame_list_;
+
+    // Circular buffer -> vector index not meaning the frame idx 
+    // 
+    boost::circular_buffer<std::shared_ptr<Frame>> frame_list_;
     // Circular buffer for the frame list? 
     // For tracking yes
     // For the key frame list, just use the vector 

@@ -67,6 +67,7 @@ private:
     std::vector<cv::DMatch> matches_;
     cv::Mat img_;
     double timestamp_;
+    uint32_t id_;
     // std::shared_ptr<FeatureExtractor> feature_extractor_;
     // Feature extractor class 
 
