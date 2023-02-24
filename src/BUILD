@@ -15,7 +15,10 @@ cc_binary(
 	name = "v_frontend",
 	srcs = ["VisualFrontend.cpp"],
     includes = ["*.hpp"],
-    deps = ["@opencv//:opencv", "@boost//:boost", "//src:v_frontend_lib"],
+    deps = ["@opencv//:opencv", 
+            "@boost//:boost", 
+            "@rapid_json//:rapid_json", 
+            "//src:v_frontend_lib"],
 	)
 
     

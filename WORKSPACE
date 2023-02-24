@@ -9,3 +9,9 @@ new_local_repository(
     build_file = "boost.BUILD",
     path = "/usr/local",
 )
+
+new_local_repository(
+    name = "rapid_json",
+    build_file = "rapid_json.BUILD",
+    path = "/usr/local",
+)

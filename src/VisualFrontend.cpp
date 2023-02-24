@@ -11,6 +11,10 @@
 #include "GoodFeatureExtractor.hpp"
 #include "SiftFeatureExtractor.hpp"
 #include "Tracker.hpp"
+#include "Calibration.hpp"
+
+#include "rapidjson/document.h"
+#include "rapidjson/filereadstream.h"
 
 #define DEBUG 1
 
@@ -22,11 +26,44 @@ void print_localtime()
 
 int main(int argc, char **argv)
 {
-    std::string image_dir;
+    std::string config_fname;
     if (argc > 1)
     {
-        image_dir = argv[1];
+        config_fname = argv[1];
     }
+
+    // Read the json config file.
+    FILE *fp = fopen(config_fname.c_str(), "rt");
+    if (!fp)
+    {
+        printf("<4>Could not open the config file %s\n", config_fname.c_str());
+        return -1;
+    }
+
+    char read_buffer[6000];
+    rapidjson::FileReadStream is(fp, read_buffer, sizeof(read_buffer));
+    rapidjson::Document json_cfg;
+    json_cfg.ParseStream(is);
+
+    std::string image_dir = json_cfg["image_dir"].GetString();
+    rapidjson::Value& calibration_cfg = json_cfg["calibration"];
+    rapidjson::Value& distortion_cfg = json_cfg["distortion"];
+    // fx, fy, cx, cy
+    std::vector<float> intrinsic(4, 0);
+    std::vector<float> distortion(5, 0);
+    intrinsic[0] = calibration_cfg["fx"].GetDouble();
+    intrinsic[1] = calibration_cfg["fy"].GetDouble();
+    intrinsic[2] = calibration_cfg["cx"].GetDouble();
+    intrinsic[3] = calibration_cfg["cy"].GetDouble();
+    
+    distortion[0] = distortion_cfg["d0"].GetDouble();
+    distortion[1] = distortion_cfg["d1"].GetDouble();
+    distortion[2] = distortion_cfg["d2"].GetDouble();
+    distortion[3] = distortion_cfg["d3"].GetDouble();
+    distortion[4] = distortion_cfg["d4"].GetDouble();
+
+    std::shared_ptr<visual_frontend::Calibration> calibration(new visual_frontend::Calibration(intrinsic, distortion));
+
     std::string filename = image_dir + "/rgb.txt";
     std::ifstream in(filename);
 
@@ -47,15 +84,15 @@ int main(int argc, char **argv)
         printf("Timestamp %f image name %s\n", timestamp, img_name.c_str());
 
         cv::Mat image = cv::imread(image_dir + "/" + img_name);
-        // std::cout <<"Uhm\n" << image << std::endl;
         cv::Mat gray;
         cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
         // printf("Now process the image into a frame\n");
 
         // Create Frame factory method
-        std::shared_ptr<visual_frontend::Frame> frame(new visual_frontend::Frame()); // gray
-        frame->SetImage(image);
-        frame->SetTimestamp(timestamp);
+        std::shared_ptr<visual_frontend::Frame> frame(new visual_frontend::Frame(image, timestamp, calibration)); // gray
+        // std::shared_ptr<visual_frontend::Frame> frame(new visual_frontend::Frame()); // gray
+        // frame->SetImage(image);
+        // frame->SetTimestamp(timestamp);
         surf_feature_extractor->ExtractFeatures(gray, frame);
 
         // Track the features with the Tracker object
@@ -76,16 +113,7 @@ int main(int argc, char **argv)
         {
             // cv::imshow("Image", image);
 
-            // Feature Tracking image
-            // cv::Mat display = image.clone();
-            // int radius = 4;
-
-            // for (std::size_t i = 0; i < corners.size(); i++) {
-            //     cv::circle(display, corners[i], radius, cv::Scalar(255, 0, 0));
-            // }
-
-            // cv::imshow("feature", display);
-            // cv::waitKey(0);
+           
             int radius = 2;
             cv::Mat tracking_visualization = image.clone();
             // How to handle the const
@@ -96,10 +124,9 @@ int main(int argc, char **argv)
             for (std::shared_ptr<visual_frontend::Feature> &feature : features)
             {
                 cv::circle(tracking_visualization, feature->GetPoint(), radius, cv::Scalar(255, 0, 0));
-
-                std::shared_ptr<visual_frontend::Feature> curr_feature = feature;
                 int track_cnt = 0;
-                while (curr_feature->HasTrackedFeature())
+                std::shared_ptr<visual_frontend::Feature> curr_feature = feature;
+                while (curr_feature->HasTrackedFeature() && track_cnt < 10)
                 {
                     std::shared_ptr<visual_frontend::Feature> prev_feature = curr_feature->GetPrevFeature();
                     // if (prev_feature == nullptr) break;
@@ -108,79 +135,17 @@ int main(int argc, char **argv)
                     cv::line(tracking_visualization, cv::Point(prev_feature->GetPoint().x, prev_feature->GetPoint().y),
                              cv::Point(curr_feature->GetPoint().x, curr_feature->GetPoint().y), cv::Scalar(0, 255, 0));
                     // cv::circle(tracking_visualization, prev_feature->GetPoint(), radius, cv::Scalar(0, 0, 255));
-
-                    curr_feature = prev_feature;
                     
+                    curr_feature = prev_feature;
                     track_cnt++;
-                    if (track_cnt > 1) {
-                        printf("Tracked %d\n", track_cnt);
-                    }
                 }
             }
-                        cv::imshow("tracking_visualization", tracking_visualization);
+            cv::namedWindow("tracking_visualization", cv::WINDOW_GUI_EXPANDED);
+            // cv::resizeWindow("tracking_visualization", )
+            cv::imshow("tracking_visualization", tracking_visualization);
 
-            // for (std::size_t i = 0; i < curr_matches.size(); i++)
-            // {
-            //     cv::DMatch match = curr_matches[i];
-            //     if (match.trainIdx == -1 || match.queryIdx == -1)
-            //     {
-            //         tracking_failure_flag = true;
-            //         continue;
-            //     }
-            //     if (abs(features_to[match.queryIdx]->GetPoint().x - features_from[match.trainIdx]->GetPoint().x) > 5 || abs(features_to[match.queryIdx]->GetPoint().y - features_from[match.trainIdx]->GetPoint().y) > 5)
-            //     {
-            //         // printf("Check this idx %d\n", cnt_tmp);
-            //         match.trainIdx = -1;
-            //         match.queryIdx = -1;
-            //         continue;
-            //     }
-            //     cv::circle(display, curr_features[i]->GetPoint(), radius, cv::Scalar(255, 0, 0));
 
-            //     cv::line(display, cv::Point(features_to[match.queryIdx]->GetPoint().x, features_to[match.queryIdx]->GetPoint().y),
-            //              cv::Point(features_from[match.trainIdx]->GetPoint().x, features_from[match.trainIdx]->GetPoint().y), cv::Scalar(0, 255, 0));
-
-            //     for (std::size_t i = frame_list_.size() - 1; i > 1; i--)
-            //     {
-            //         std::vector<cv::DMatch> &next_matches = frame_list_[i]->GetMatches();
-            //         if (match.trainIdx == -1)
-            //             continue;
-
-            //         // printf("Track idx check %d %d %d\n", next_matches.size(), match.queryIdx, match.trainIdx);
-
-            //         cv::DMatch next_match = next_matches[match.trainIdx];
-            //         match = next_match;
-
-            //         std::vector<std::shared_ptr<Feature>> &tracked_features_to = frame_list_[i]->GetFeatures();
-            //         std::vector<std::shared_ptr<Feature>> &tracked_features_from = frame_list_[i - 1]->GetFeatures();
-            //         if (next_match.trainIdx == -1 || next_match.queryIdx == -1)
-            //         {
-            //             tracking_failure_flag = true;
-            //             continue;
-            //         }
-            //         if (abs(tracked_features_to[next_match.queryIdx]->GetPoint().x - tracked_features_from[next_match.trainIdx]->GetPoint().x) > 5 || abs(tracked_features_to[next_match.queryIdx]->GetPoint().y - tracked_features_from[next_match.trainIdx]->GetPoint().y) > 5)
-            //         {
-            //             // printf("Check this idx %d\n", cnt_tmp);
-            //             // next_match.trainIdx = -1;
-            //             // next_match.queryIdx = -1;
-            //             // printf("Hello\n");
-            //             continue;
-            //         }
-            //         printf("size check %d %d %d\n", next_matches.size(), tracked_features_to.size(), tracked_features_from.size());
-
-            //         if (next_match.queryIdx > tracked_features_to.size() || next_match.trainIdx > tracked_features_from.size())
-            //         {
-            //             std::cout << "Query " << next_match.queryIdx << " Train " << next_match.trainIdx << std::endl;
-            //             std::cout << tracked_features_from.size() << " " << tracked_features_to.size() << std::endl;
-            //             printf("%f %f\n", tracked_features_to[next_match.queryIdx]->GetPoint().x, tracked_features_to[next_match.queryIdx]->GetPoint().y);
-            //             printf("%f %f\n", tracked_features_from[next_match.trainIdx]->GetPoint().x, tracked_features_from[next_match.trainIdx]->GetPoint().y);
-            //         }
-
-            //         cv::line(display, cv::Point(tracked_features_to[next_match.queryIdx]->GetPoint().x, tracked_features_to[next_match.queryIdx]->GetPoint().y),
-            //                  cv::Point(tracked_features_from[next_match.trainIdx]->GetPoint().x, tracked_features_from[next_match.trainIdx]->GetPoint().y), cv::Scalar(0, 255, 0));
-            //     }
-            // }
-
-            cv::waitKey(0);
+            cv::waitKey(10);
         }
     }
     // Read each image.

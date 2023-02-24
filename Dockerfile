@@ -255,8 +255,17 @@ RUN cd /tmp && \
 
 # WORKDIR /openvslam/build/
 
+
+# Install rapidjson from source
+RUN cd /opt && \
+    curl -kOL https://github.com/miloyip/rapidjson/archive/v1.1.0.tar.gz && \
+    tar xfz v1.1.0.tar.gz && \
+    mv rapidjson-1.1.0/include/rapidjson/ /usr/local/include 
+
+RUN rm -rf  /opt/rapidjson-1.1.0 
+
 # Set up the bazel setting
-RUN echo "build --copt=-fdiagnostics-color=always\n\rrun --copt=-fdiagnostics-color=always" >> /etc/bazel.bazelrc 
+RUN echo "build --copt=-fdiagnostics-color=always\nrun --copt=-fdiagnostics-color=always" >> /etc/bazel.bazelrc 
 
 # Set up workspace
 # RUN mkdir -p /usr/visual_frontend

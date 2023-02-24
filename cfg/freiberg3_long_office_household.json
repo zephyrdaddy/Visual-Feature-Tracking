@@ -1,0 +1,17 @@
+{
+    "calibration": {
+        "fx": 535.4,
+        "fy": 539.2,
+        "cx": 320.1,
+        "cy": 247.6
+    },
+    "distortion": {
+        "d0": 0,
+        "d1": 0,
+        "d2": 0,
+        "d3": 0,
+        "d4": 0
+    },
+    "image_dir": "/usr/src/data/"
+    
+}

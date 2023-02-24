@@ -42,12 +42,17 @@ namespace visual_frontend
         std::cout << curr_frame->GetDescr().size() << std::endl;
         // DMatch default constructor queryIdx(-1), trainIdx(-1), imgIdx(-1), distance(FLT_MAX)
         curr_matches.resize(matches.size());
+        double thresholdDist = 0.1 * sqrt(double( curr_frame->GetHeight() * curr_frame->GetHeight() + curr_frame->GetWidth() * curr_frame->GetWidth()));
+
         // If we do this, we loose the query idx
         for (std::size_t i = 0; i < matches.size(); i++)
         {
             const float ratio = 0.8;
-
-            if (matches[i][0].distance < ratio * matches[i][1].distance)
+            int dx = curr_features[matches[i][0].queryIdx]->GetPoint().x - prev_features[matches[i][0].trainIdx]->GetPoint().x;
+            int dy = curr_features[matches[i][0].queryIdx]->GetPoint().y - prev_features[matches[i][0].trainIdx]->GetPoint().y;
+            
+            float pixel_dist = sqrt(dx * dx + dy * dy);
+            if (matches[i][0].distance < ratio * matches[i][1].distance && pixel_dist < thresholdDist)
             {
                 curr_matches[i] = matches[i][0];
                 // Establish connection between tracked features
@@ -151,7 +156,7 @@ namespace visual_frontend
                                       lines2);              // vector of epipolar lines
 
         int cnt = 0;
-        printf("Size Line1 %d\n", lines1.size());
+
         // for all epipolar lines
         for (auto it = lines1.begin(); it != lines1.end(); ++it)
         {
@@ -160,7 +165,7 @@ namespace visual_frontend
             float v1 = un_prev_pts[cnt].y;
 
             float a1 = (*it)[0];
-            float b1 = (*it)[1];
+            float b1 = (*it)[1]; 
             float c1 = (*it)[2];
             float num1 = a1 * u1 + b1 * v1 + c1;
             float squareDist2 = num1 * num1 / (a1 * a1 + b1 * b1);
@@ -314,118 +319,6 @@ namespace visual_frontend
             curr_features[i]->SetTrackCount(prev_features[curr_matches[i].trainIdx]->GetTrackCount() + 1);
         }
 
-        // Do another check using the fundamental matrix estimation.
-
-        // cv::Mat display = curr_frame->GetImage().clone();
-        // int radius = 4;
-
-        // // for (std::size_t i = 0; i < curr_features.size(); i++) {
-
-        // //     cv::circle(display, curr_features[i]->GetPoint(), radius, cv::Scalar(255, 0, 0));
-        // // }
-
-        // // for (const auto& )
-
-        // std::vector<std::shared_ptr<Feature>> &features_to = frame_list_[frame_list_.size() - 1]->GetFeatures();
-        // std::vector<std::shared_ptr<Feature>> &features_from = frame_list_[frame_list_.size() - 2]->GetFeatures();
-        // for (std::size_t i = 0; i < curr_matches.size(); i++)
-        // {
-        //     cv::DMatch match = curr_matches[i];
-        //     if (match.trainIdx == -1 || match.queryIdx == -1)
-        //     {
-        //         tracking_failure_flag = true;
-        //         continue;
-        //     }
-        //     if (abs(features_to[match.queryIdx]->GetPoint().x - features_from[match.trainIdx]->GetPoint().x) > 5 || abs(features_to[match.queryIdx]->GetPoint().y - features_from[match.trainIdx]->GetPoint().y) > 5)
-        //     {
-        //         // printf("Check this idx %d\n", cnt_tmp);
-        //         match.trainIdx = -1;
-        //         match.queryIdx = -1;
-        //         continue;
-        //     }
-        //     cv::circle(display, curr_features[i]->GetPoint(), radius, cv::Scalar(255, 0, 0));
-
-        //     cv::line(display, cv::Point(features_to[match.queryIdx]->GetPoint().x, features_to[match.queryIdx]->GetPoint().y),
-        //              cv::Point(features_from[match.trainIdx]->GetPoint().x, features_from[match.trainIdx]->GetPoint().y), cv::Scalar(0, 255, 0));
-
-        //     for (std::size_t i = frame_list_.size() - 1; i > 1; i--)
-        //     {
-        //         std::vector<cv::DMatch> &next_matches = frame_list_[i]->GetMatches();
-        //         if (match.trainIdx == -1)
-        //             continue;
-
-        //         // printf("Track idx check %d %d %d\n", next_matches.size(), match.queryIdx, match.trainIdx);
-
-        //         cv::DMatch next_match = next_matches[match.trainIdx];
-        //         match = next_match;
-
-        //         std::vector<std::shared_ptr<Feature>> &tracked_features_to = frame_list_[i]->GetFeatures();
-        //         std::vector<std::shared_ptr<Feature>> &tracked_features_from = frame_list_[i - 1]->GetFeatures();
-        //         if (next_match.trainIdx == -1 || next_match.queryIdx == -1)
-        //         {
-        //             tracking_failure_flag = true;
-        //             continue;
-        //         }
-        //         if (abs(tracked_features_to[next_match.queryIdx]->GetPoint().x - tracked_features_from[next_match.trainIdx]->GetPoint().x) > 5 || abs(tracked_features_to[next_match.queryIdx]->GetPoint().y - tracked_features_from[next_match.trainIdx]->GetPoint().y) > 5)
-        //         {
-        //             // printf("Check this idx %d\n", cnt_tmp);
-        //             // next_match.trainIdx = -1;
-        //             // next_match.queryIdx = -1;
-        //             // printf("Hello\n");
-        //             continue;
-        //         }
-        //         // printf("size check %d %d %d\n", next_matches.size(), tracked_features_to.size(), tracked_features_from.size());
-
-        //         if (next_match.queryIdx > tracked_features_to.size() || next_match.trainIdx > tracked_features_from.size())
-        //         {
-        //             std::cout << "Query " << next_match.queryIdx << " Train " << next_match.trainIdx << std::endl;
-        //             std::cout << tracked_features_from.size() << " " << tracked_features_to.size() << std::endl;
-        //             printf("%f %f\n", tracked_features_to[next_match.queryIdx]->GetPoint().x, tracked_features_to[next_match.queryIdx]->GetPoint().y);
-        //             printf("%f %f\n", tracked_features_from[next_match.trainIdx]->GetPoint().x, tracked_features_from[next_match.trainIdx]->GetPoint().y);
-        //         }
-
-        //         cv::line(display, cv::Point(tracked_features_to[next_match.queryIdx]->GetPoint().x, tracked_features_to[next_match.queryIdx]->GetPoint().y),
-        //                  cv::Point(tracked_features_from[next_match.trainIdx]->GetPoint().x, tracked_features_from[next_match.trainIdx]->GetPoint().y), cv::Scalar(0, 255, 0));
-        //     }
-        // }
-
-        // // for (std::size_t i = frame_list_.size() - 1; i > check_idx; i--) {
-        // //     // If tracking was successful.
-        // //     std::vector<cv::DMatch>& tracking_matches = frame_list_[i]->GetMatches();
-
-        // //     std::vector<std::shared_ptr<Feature>> features_to = frame_list_[i]->GetFeatures();
-        // //     std::vector<std::shared_ptr<Feature>> features_from = frame_list_[i - 1]->GetFeatures();
-        // //     // for (auto match : tracking_matches) {
-        // //     int cnt_tmp = 0;
-        // //     for (std::size_t j = 0; j < tracking_matches.size(); j++) {
-        // //         auto& match = tracking_matches[j];
-        // //         // std::cout << match.trainIdx << std::endl;
-        // //         // printf("Idx %d\n", i);
-        // //         if (match.trainIdx == -1 || match.queryIdx == -1) {
-        // //             tracking_failure_flag = true;
-        // //             continue;
-        // //         }
-        // //         if (abs(features_to[match.queryIdx]->GetPoint().x - features_from[match.trainIdx]->GetPoint().x) > 5 || abs(features_to[match.queryIdx]->GetPoint().y - features_from[match.trainIdx]->GetPoint().y) > 5) {
-        // //             // printf("Check this idx %d\n", cnt_tmp);
-        // //             match.trainIdx = -1;
-        // //             match.queryIdx = -1;
-        // //             continue;
-        // //         }
-        // //         cnt_tmp++;
-        // //         // if (abs(features_to[match.queryIdx]->GetPoint().x - features_from[match.trainIdx]->GetPoint().x) < 5 && abs(features_to[match.queryIdx]->GetPoint().y - features_from[match.trainIdx]->GetPoint().y) < 5) {
-        // //         //     // printf("Check this idx %d\n", cnt_tmp);
-        // //         //     continue;
-        // //         //     // continue;
-        // //         // }
-        // //         // float features_to[match.queryIdx]->GetPoint().x, features_to[match.queryIdx]->GetPoint().y;
-
-        // //         cv::line(display, cv::Point(features_to[match.queryIdx]->GetPoint().x, features_to[match.queryIdx]->GetPoint().y),
-        // //                        cv::Point(features_from[match.trainIdx]->GetPoint().x, features_from[match.trainIdx]->GetPoint().y), cv::Scalar(0, 255, 0));
-        // //     }
-        // //     // Don't draw the lines for every feature.
-        // //     // Only draw the lines for the feature currently being tracked.
-
-        // // }
 
         // cv::imshow("Tracking", display);
         // cv::waitKey(0);
