@@ -2,6 +2,9 @@
 
 #include "Common.hpp"
 #include "Feature.hpp"
+#include "Frame.hpp"
+#include "Eigen/Eigen"
+#include "Eigen/SVD"
 #include "opencv4/opencv2/calib3d/calib3d.hpp"
 namespace visual_frontend
 {
@@ -20,6 +23,8 @@ namespace visual_frontend
 
         void Triangulate(const std::shared_ptr<Feature> &feature_1,
                          const std::shared_ptr<Feature> &feature_2,
+                         const std::shared_ptr<Frame> &frame_1,
+                         const std::shared_ptr<Frame> &frame_2,
                          const Eigen::Matrix3d &essential_mat,
                          Eigen::Vector3d &landmark);
 

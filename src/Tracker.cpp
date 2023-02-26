@@ -1,4 +1,5 @@
 #include "Tracker.hpp"
+#include "Triangulator.hpp"
 
 namespace visual_frontend
 {
@@ -38,8 +39,8 @@ namespace visual_frontend
 
         std::vector<std::shared_ptr<Feature>> &curr_features = curr_frame->GetFeatures();
         const std::vector<std::shared_ptr<Feature>> &prev_features = prev_frame->GetFeatures();
-        std::cout << curr_features.size() << " " << prev_features.size() << std::endl;
-        std::cout << curr_frame->GetDescr().size() << std::endl;
+        // std::cout << curr_features.size() << " " << prev_features.size() << std::endl;
+        // std::cout << curr_frame->GetDescr().size() << std::endl;
         // DMatch default constructor queryIdx(-1), trainIdx(-1), imgIdx(-1), distance(FLT_MAX)
         curr_matches.resize(matches.size());
         double thresholdDist = 0.1 * sqrt(double( curr_frame->GetHeight() * curr_frame->GetHeight() + curr_frame->GetWidth() * curr_frame->GetWidth()));
@@ -69,6 +70,8 @@ namespace visual_frontend
 
         std::vector<cv::Point2f> un_curr_pts, un_prev_pts;
         // int idx_valid = 0;
+        Triangulator triangulator;
+
         for (std::size_t i = 0; i < curr_matches.size(); i++)
         {
             if (curr_matches[i].queryIdx == -1)
@@ -89,7 +92,12 @@ namespace visual_frontend
             // std::cout << "Prev Test " << prev_features[curr_matches[i].trainIdx]->GetPoint() << std::endl;
             // std::cout << "prv Point " << un_prev_pts[idx_valid] << std::endl;
             // idx_valid++;
+            // triangulator.Triangulate();
         }
+        
+
+
+
 
         // printf("Size %d %d\n", un_curr_pts.size(), un_prev_pts.size());
 
@@ -140,7 +148,7 @@ namespace visual_frontend
         double f32 = F.at<double>(2, 1);
         double f33 = F.at<double>(2, 2);
         std::cout << F << std::endl;
-        std::cout << f11 << std::endl;
+        // std::cout << f11 << std::endl;
         const float th = 3.841; // 3.841; // 1.9598 pixel distance
 
         // draw the left points corresponding epipolar lines in right image

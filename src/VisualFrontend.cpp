@@ -81,7 +81,7 @@ int main(int argc, char **argv)
         double timestamp;
         std::string img_name;
         ss >> timestamp >> img_name;
-        printf("Timestamp %f image name %s\n", timestamp, img_name.c_str());
+        // printf("Timestamp %f image name %s\n", timestamp, img_name.c_str());
 
         cv::Mat image = cv::imread(image_dir + "/" + img_name);
         cv::Mat gray;

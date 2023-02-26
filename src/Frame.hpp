@@ -4,8 +4,10 @@
 #include "Common.hpp"
 #include "Feature.hpp"
 #include "Calibration.hpp"
+#include "Triangulator.hpp"
 #include "opencv4/opencv2/core.hpp"
 #include "opencv4/opencv2/opencv.hpp"
+#include "Eigen/Eigen"
 
 namespace visual_frontend
 {
@@ -21,9 +23,16 @@ namespace visual_frontend
         };
 
         Frame(cv::Mat &img, double timestamp,
-              const std::shared_ptr<Calibration> &calibration) : 
-              img_(img), calibration_(calibration), timestamp_(timestamp), 
-              width_(img_.size().width), height_(img_.size().height){};
+              const std::shared_ptr<Calibration> &calibration) : img_(img), calibration_(calibration), timestamp_(timestamp),
+                                                                 width_(img_.size().width), height_(img_.size().height)
+        {
+
+            K_ = Eigen::Matrix3d::Identity();
+            K_(0, 0) = calibration_.get_fx();
+            K_(1, 1) = calibration_.get_fy();
+            K_(0, 2) = calibration_.get_cx();
+            K_(1, 2) = calibration_.get_cy();
+        };
         // static Frame::Ptr CreateFrame() {
 
         // }
@@ -82,6 +91,11 @@ namespace visual_frontend
             return matches_;
         }
 
+        Eigen::Matrix3d &GetIntrinsicMat()
+        {
+            return K_;
+        }
+
         cv::Mat descr_;
 
     private:
@@ -90,6 +104,8 @@ namespace visual_frontend
         std::vector<cv::DMatch> matches_;
         cv::Mat img_;
         const std::shared_ptr<Calibration> calibration_;
+        Triangulator triangulator_;
+        Eigen::Matrix3d K_;
 
         double timestamp_;
         int width_;

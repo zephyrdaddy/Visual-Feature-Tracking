@@ -5,16 +5,15 @@ cc_library(
 	srcs = glob(["*.cpp"], exclude = ["VisualFrontend.cpp"]),
     hdrs = glob(["*.hpp"]),
     copts = [""],
-    deps = ["@opencv//:opencv", "@boost//:boost",],
+    deps = ["@opencv//:opencv", "@boost//:boost", "@eigen//:eigen",],
     visibility = ["//visibility:public"],
-    # visibility = ["//src:__pkg__"],
 	linkstatic = 1,
 	)
 
 cc_binary(
 	name = "v_frontend",
 	srcs = ["VisualFrontend.cpp"],
-    includes = ["*.hpp"],
+    # includes = ["*.hpp"],
     deps = ["@opencv//:opencv", 
             "@boost//:boost", 
             "@rapid_json//:rapid_json", 

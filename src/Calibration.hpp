@@ -1,6 +1,6 @@
 #pragma once
 #include "Common.hpp"
-
+#include "Eigen/Eigen"
 namespace visual_frontend
 {
 
@@ -22,6 +22,21 @@ namespace visual_frontend
         
         void project();
 
+        float get_fx() {
+            return intrinsic_[0];
+        }
+
+        float get_fy() {
+            return intrinsic_[1];
+        }
+
+        float get_cx() {
+            return intrinsic_[2];
+        }
+
+        float get_cy() {
+            return intrinsic_[3];
+        }
 
 
     private:
